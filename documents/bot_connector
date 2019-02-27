@@ -1,0 +1,31 @@
+- bot connector dùng để:
+ - authentication bot
+ - tạo conversation => cần có bot/user id, bot/user name..
+ - send/receive message (activity)
+
+endpoint:
+ - hứng các sự kiện (events)
+ Gồm có các dạng event:
+  ref: https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/bots/bots-notifications#team-member-or-bot-addition
+ handle các sự kiện (events) gửi đến bot,
+ https://docs.microsoft.com/en-us/azure/bot-service/nodejs/bot-builder-nodejs-handle-conversation-events?view=azure-bot-service-3.0
+ => từ các sự kiện, lấy các activity => parse để lấy các thông tin về user/team id (contexts) (tùy thuộc tạo ra sự kiện là user/team...)
+
+ lấy thông tin context (user id/ team id, team members...)
+ https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/bots/bots-context#fetching-the-team-roster
+
+ => start conversation, create/reply message...:
+ https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/bots/bot-conversations/bots-conv-channel
+ https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/bots/bot-conversations/bots-conv-proactive
+
+ => more ref: https://docs.microsoft.com/en-us/microsoftteams/platform/concepts/bots/bots-overview
+
+
+ BOT:
+ 1. ENDPOINT <= GET EVENT => PARSE ACTIVITY => GET context
+ 2. BOT CONNECTOR => START CONVERSATION, SEND/REPLY MESSAGE TO TO CONTEXT (USER/TEAM ID) GET FROM ENDPOINT
+ 3. BOT STATE <= SAVE DATA ABOUT BOT
+
+
+ => @TODO:
+ build endpoint and construct activity to get skype message (events) on channel

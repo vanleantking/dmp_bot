@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"../utils"
 )
 
 type SkypeService struct {
@@ -15,8 +17,16 @@ type SkypeService struct {
 	AppPassword   string
 	Authorization string
 	Headers       map[string]string
-	Messages
+	MessageSrv    *MessageService
 }
+
+type MessageService struct {
+	ConversationID string
+	Activity       Messages
+}
+
+// type Activity struct {
+// }
 
 type Messages struct {
 	Type string `json:"type"`
@@ -28,6 +38,22 @@ type AuthenResponse struct {
 	ExpiresIn   int    `json:"expires_in"`
 	ExExpires   int    `json:"ext_expires_in"`
 	AccessToken string `json:"access_token"`
+}
+
+type Conversation struct {
+	Bot       ChannelAccount   `json:"bot"`
+	IsGroup   bool             `json:"isGroup"`
+	Members   []ChannelAccount `json:"members"`
+	TopicName string           `json:"topicName"`
+}
+
+type CoversationResp struct {
+	ID string `json:"id"`
+}
+
+type ChannelAccount struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ErrorResponse struct {
@@ -62,7 +88,7 @@ func (SSkype *SkypeService) Authenticate(url string) error {
 		"content-type": "application/x-www-form-urlencoded"}
 
 	SSkype.setHeader(headers)
-	requeststr := fmt.Sprintf("client_id=%s&scope=https://api.botframework.com/.default&grant_type=client_credentials&client_secret=%s")
+	requeststr := fmt.Sprintf("client_id=%s&scope=https://api.botframework.com/.default&grant_type=client_credentials&client_secret=%s", SSkype.AppID, SSkype.AppPassword)
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(requeststr)))
 
 	// Set header request
@@ -99,5 +125,81 @@ func (SSkype *SkypeService) Authenticate(url string) error {
 }
 
 func (SSkype *SkypeService) SendMessage(message Messages) {
+	SSkype.MessageSrv.Activity = message
 
+	var headers = map[string]string{
+		"content-type": "application/json"}
+
+	SSkype.setHeader(headers)
+
+	activity := fmt.Sprintf("%#v", SSkype.MessageSrv.Activity)
+	url := fmt.Sprintf("%s/v3/conversations/%s/activities", utils.MESSAGE_TRANSFER_URL, SSkype.MessageSrv.ConversationID)
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(activity)))
+
+	// Set header request
+	if len(SSkype.Headers) > 0 {
+		for key, value := range SSkype.Headers {
+			req.Header.Set(key, value)
+		}
+	}
+	// conResp := CoversationResp{}
+
+	resp, err := SSkype.Client.Do(req)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println("string body request: ", string(body))
+
+}
+
+func (SSkype *SkypeService) StartConversation(url string, conversation Conversation) (CoversationResp, error) {
+	var headers = map[string]string{
+		"content-type": "application/json"}
+
+	SSkype.setHeader(headers)
+
+	con, _ := json.Marshal(conversation)
+
+	// converstr := fmt.Sprintf("%#v", string(con))
+	fmt.Println(string(con))
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(con))
+
+	// Set header request
+	if len(SSkype.Headers) > 0 {
+		for key, value := range SSkype.Headers {
+			req.Header.Set(key, value)
+		}
+	}
+	conResp := CoversationResp{}
+
+	resp, err := SSkype.Client.Do(req)
+	if err != nil {
+		return conResp, err
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return conResp, err
+	}
+	fmt.Println("string body request: ", string(body))
+	if err := json.Unmarshal(body, &conResp); err != nil {
+		var ErrorResp = ErrorResponse{}
+		err = json.Unmarshal(body, &ErrorResp)
+		if err == nil {
+			return conResp, errors.New(ErrorResp.ErrorDescription)
+		}
+		return conResp, err
+	}
+	// SSkype.MessageSrv.ConversationID = conResp.ID
+
+	return conResp, nil
 }
