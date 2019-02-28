@@ -44,7 +44,7 @@ func main() {
 
 // this function handles our skype activity
 func handleActivity(activity *skype.Activity) {
-	fmt.Println("say hello")
+	fmt.Println("say hello", activity)
 	if activity.Type == "message" {
 		// hard coding an auth token is no good practice! I am just doing this to make this example more simple.
 		if err := skype.SendReplyMessage(activity, "Good evening. Nice to meet you!", authorizationBearerToken); err != nil {
