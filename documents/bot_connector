@@ -29,3 +29,18 @@ endpoint:
 
  => @TODO:
  build endpoint and construct activity to get skype message (events) on channel
+
+
+ https://www.youtube.com/watch?v=cYwGPQ62zHM
+
+ => using ngrok server to make https tunnel, register endpoint at azure portal:
+ https://blog.botframework.com/2017/10/19/debug-channel-locally-using-ngrok/
+
+
+ key share to login bot:
+ https://login.botframework.com/v1/.well-known/keys
+
+ config tls azure golang for endpoint server:
+ http://pascal.bach.ch/2015/12/17/from-tcp-to-tls-in-go/
+ https://azure.microsoft.com/en-gb/updates/azure-bot-service-enforcing-transport-layer-security-tls-1-2/
+ https://blog.botframework.com/2018/11/06/announcement-azure-bot-service-enforcing-transport-layer-security-tls-1-2/
