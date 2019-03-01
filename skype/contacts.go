@@ -16,8 +16,9 @@ type Contact struct {
 	Name       string `json:"name"`
 }
 
-func LoadContacts(path string) (Contacts, error) {
-	var contacts = Contacts{}
+func LoadContacts(path string) ([]Contact, error) {
+	var contactsType = Contacts{}
+	var contacts = []Contact{}
 
 	//File not exist in path, implement crawl proxy
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -29,23 +30,39 @@ func LoadContacts(path string) (Contacts, error) {
 	}
 	defer contact_file.Close()
 
-	err = json.NewDecoder(contact_file).Decode(&contacts)
+	err = json.NewDecoder(contact_file).Decode(&contactsType)
+	if err != nil {
+		return contacts, err
+	}
+	for _, contact := range contactsType.Contacts {
+		contacts = append(contacts, contact)
+	}
 	return contacts, err
 }
 
-func SaveContacts(path string, contacts Contacts) error {
-	contactsJson, err := json.Marshal(contacts)
+func SaveContacts(path string, contacts []Contact) error {
+	contactType := Contacts{Contacts: contacts}
+	contactsJson, err := json.Marshal(contactType)
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(path, contactsJson, 0644)
 }
 
-func CheckContactExist(contacts Contacts, id string) bool {
-	for _, contact := range contacts.Contacts {
+func CheckContactExist(contacts []Contact, id string) (bool, int) {
+	for index, contact := range contacts {
 		if contact.Id == id {
-			return true
+			return true, index
 		}
 	}
-	return false
+	return false, 0
+}
+
+func CheckInChannelList(contacts []ChannelAccount, id string) (bool, int) {
+	for index, contact := range contacts {
+		if contact.ID == id {
+			return true, index
+		}
+	}
+	return false, 0
 }

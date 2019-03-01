@@ -111,7 +111,7 @@ func (SSkype *SkypeService) Authenticate(url string) error {
 func (SSkype *SkypeService) SendActivity(message string) {
 	fmt.Println("go to replay, ", message)
 	responseActivity := &Activity{
-		Type:         SSkype.SActivity.Type,
+		Type:         "message",
 		From:         SSkype.SActivity.Recipient,
 		Conversation: SSkype.SActivity.Conversation,
 		Recipient:    SSkype.SActivity.From,

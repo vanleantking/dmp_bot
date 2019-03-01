@@ -31,6 +31,7 @@ endpoint:
 
  => using ngrok server to make https tunnel, register endpoint at azure portal:
  https://blog.botframework.com/2017/10/19/debug-channel-locally-using-ngrok/
+ ngrok http 9443 -host-header="localhost:9443"
 
 
  key share to login bot:
