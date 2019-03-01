@@ -27,10 +27,6 @@ endpoint:
  3. BOT STATE <= SAVE DATA ABOUT BOT
 
 
- => @TODO:
- build endpoint and construct activity to get skype message (events) on channel
-
-
  https://www.youtube.com/watch?v=cYwGPQ62zHM
 
  => using ngrok server to make https tunnel, register endpoint at azure portal:

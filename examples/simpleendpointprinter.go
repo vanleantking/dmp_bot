@@ -27,7 +27,14 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/michivip/skypeapi"
+	"../skype"
+	"../utils"
+)
+
+var authorizationBearerToken string
+
+const (
+	actionHookPath string = "/skype/actionhook"
 )
 
 /*
@@ -38,18 +45,20 @@ We will just use the given http.Server to listen to incoming requests.
 func startSimpleEndpointPrinter() {
 	// bad practice. In real production you should better request the token via skypeapi.RequestAccessToken
 	// WARNING: when using a static authorization token it could expire. In future the will be an automatic refresher
-	authorizationBearerToken := "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ii1zeE1KTUxDSURXTVRQdlp5SjZ0eC1DRHh3MCIsImtpZCI6Ii1zeE1KTUxDSURXTVRQdlp5SjZ0eC1DRHh3MCJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTU1MTMzNDgyOSwibmJmIjoxNTUxMzM0ODI5LCJleHAiOjE1NTEzMzg3MjksImFpbyI6IjQySmdZQ2c5T1VHMnl0WGhnT1QwVFBkYjZ2cHpBUT09IiwiYXBwaWQiOiI2MzJjZmRkOC1lMmRiLTQzZWYtOTY1My04MjA1NzI5YTEwZjkiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiQUI4dHU0UG5KVWl5VjN6Z0psTVpBQSIsInZlciI6IjEuMCJ9.K26B4JBQAaF0m42kYR_9J_4B1KmJT09b8D_aGq7Wzen3-HrA6W1OOWAIqvoT6MuDr9CCA0qF5Z-XMjCWZuQkhUXNt7iYgsThWDK1W8ceBhrgRIO7sHAN53fV7f1coU2TaaIjzolZnX364bTJm_nQ0ULylW9qQvzf9lKMrq_4lUMnmigydehd2NGpzJTHyHmzG_96KaKjcpufz-InXoauMKucEBhoFiwkcy7Eqy0XTESOvMx_UlVBKX-_Van_Wgpvq5YeCiwQUcTrBOGb_f_GLJaJo75cZi97Rv5gOo-g1X1iqm1snEB8r-rkUm8IJtF1ekYh9O7Yc2wDNOSbAWORFw"
-
+	// authorizationBearerToken := "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Ii1zeE1KTUxDSURXTVRQdlp5SjZ0eC1DRHh3MCIsImtpZCI6Ii1zeE1KTUxDSURXTVRQdlp5SjZ0eC1DRHh3MCJ9.eyJhdWQiOiJodHRwczovL2FwaS5ib3RmcmFtZXdvcmsuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiLyIsImlhdCI6MTU1MTMzNDgyOSwibmJmIjoxNTUxMzM0ODI5LCJleHAiOjE1NTEzMzg3MjksImFpbyI6IjQySmdZQ2c5T1VHMnl0WGhnT1QwVFBkYjZ2cHpBUT09IiwiYXBwaWQiOiI2MzJjZmRkOC1lMmRiLTQzZWYtOTY1My04MjA1NzI5YTEwZjkiLCJhcHBpZGFjciI6IjEiLCJpZHAiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9kNmQ0OTQyMC1mMzliLTRkZjctYTFkYy1kNTlhOTM1ODcxZGIvIiwidGlkIjoiZDZkNDk0MjAtZjM5Yi00ZGY3LWExZGMtZDU5YTkzNTg3MWRiIiwidXRpIjoiQUI4dHU0UG5KVWl5VjN6Z0psTVpBQSIsInZlciI6IjEuMCJ9.K26B4JBQAaF0m42kYR_9J_4B1KmJT09b8D_aGq7Wzen3-HrA6W1OOWAIqvoT6MuDr9CCA0qF5Z-XMjCWZuQkhUXNt7iYgsThWDK1W8ceBhrgRIO7sHAN53fV7f1coU2TaaIjzolZnX364bTJm_nQ0ULylW9qQvzf9lKMrq_4lUMnmigydehd2NGpzJTHyHmzG_96KaKjcpufz-InXoauMKucEBhoFiwkcy7Eqy0XTESOvMx_UlVBKX-_Van_Wgpvq5YeCiwQUcTrBOGb_f_GLJaJo75cZi97Rv5gOo-g1X1iqm1snEB8r-rkUm8IJtF1ekYh9O7Yc2wDNOSbAWORFw"
+	fmt.Println("start custom server endpoint", actionHookPath)
+	authorizationBearer, _ := skype.RequestAccessToken(utils.MIRCOSOFT_APP_ID, utils.MIRCOSOFT_APP_PASSWORD)
+	authorizationBearerToken = authorizationBearer.TokenType + " " + authorizationBearer.AccessToken
 	// Endpoint is going to listen on 0.0.0.0:8080
-	endpoint := skypeapi.NewEndpoint(":9443")
+	endpoint := skype.NewEndpoint(":9443")
 
 	// we define our own handle function
-	srv := endpoint.SetupServer(*skypeapi.NewEndpointHandler(func(activity *skypeapi.Activity) {
+	srv := endpoint.SetupServer(*skype.NewEndpointHandler(func(activity *skype.Activity) {
 		bytes, _ := json.MarshalIndent(activity, "", "  ")
 		fmt.Println(string(bytes))
-	}, authorizationBearerToken, "632cfdd8-e2db-43ef-9653-8205729a10f9"))
+	}, authorizationBearerToken, utils.MIRCOSOFT_APP_ID))
 	// finally we just use the default method to start the server
-	panic(srv.ListenAndServeTLS("cert.pem", "privatekey.pem"))
+	panic(srv.ListenAndServe())
 }
 
 func main() {
