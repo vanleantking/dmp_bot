@@ -11,6 +11,10 @@ import (
 	"../utils"
 )
 
+const (
+// unexpectedHttpStatusCodeTemplate = "The microsoft servers returned an unexpected http status code: %v"
+)
+
 type SkypeService struct {
 	Client        *http.Client
 	AppID         string
@@ -104,18 +108,34 @@ func (SSkype *SkypeService) Authenticate(url string) error {
 	return nil
 }
 
-func (SSkype *SkypeService) SendActivity(activity *Activity) {
-	SSkype.SActivity = activity
+func (SSkype *SkypeService) SendActivity(message string) {
+	fmt.Println("go to replay, ", message)
+	responseActivity := &Activity{
+		Type:         SSkype.SActivity.Type,
+		From:         SSkype.SActivity.Recipient,
+		Conversation: SSkype.SActivity.Conversation,
+		Recipient:    SSkype.SActivity.From,
+		Text:         message,
+		ReplyToID:    SSkype.SActivity.ID,
+	}
+
+	replyUrl := fmt.Sprintf(utils.SEND_MESSAGE,
+		SSkype.SActivity.ServiceURL,
+		SSkype.SActivity.Conversation.ID,
+		SSkype.SActivity.ID)
 
 	var headers = map[string]string{
 		"content-type": "application/json"}
 
 	SSkype.setHeader(headers)
-
-	activitystr := fmt.Sprintf("%#v", SSkype.SActivity)
-	url := fmt.Sprintf("%s/v3/conversations/%s/activities", utils.MESSAGE_TRANSFER_URL, SSkype.SActivity.Conversation.ID)
-
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(activitystr)))
+	fmt.Println(responseActivity, replyUrl)
+	activitystr, err := json.Marshal(responseActivity)
+	if err != nil {
+		panic(err.Error())
+	}
+	// activitystr := fmt.Sprintf("%#v", responseActivity)
+	fmt.Println("activity, ", activitystr)
+	req, err := http.NewRequest("POST", replyUrl, bytes.NewBuffer(activitystr))
 
 	// Set header request
 	if len(SSkype.Headers) > 0 {
@@ -135,19 +155,27 @@ func (SSkype *SkypeService) SendActivity(activity *Activity) {
 		panic(err.Error())
 	}
 	fmt.Println("string body request: ", string(body))
-
 }
 
-func (SSkype *SkypeService) StartConversation(url string, conversation Conversation) (CoversationResp, error) {
+func (SSkype *SkypeService) requestConversation(conversation Conversation, message string) error {
+
+	fmt.Println("Den day roi----------------------")
 	var headers = map[string]string{
 		"content-type": "application/json"}
 
 	SSkype.setHeader(headers)
+	con, err := json.Marshal(conversation)
+	if err != nil {
+		return err
+	}
 
-	con, _ := json.Marshal(conversation)
 	fmt.Println(string(con))
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(con))
+	req, err := http.NewRequest("POST", utils.MESSAGE_TRANSFER_URL+utils.START_CONVERSATION, bytes.NewBuffer(con))
+	fmt.Println("--------------Loi ne,")
+	if err != nil {
+		panic(err.Error())
+	}
 
 	// Set header request
 	if len(SSkype.Headers) > 0 {
@@ -155,28 +183,54 @@ func (SSkype *SkypeService) StartConversation(url string, conversation Conversat
 			req.Header.Set(key, value)
 		}
 	}
-	conResp := CoversationResp{}
 
 	resp, err := SSkype.Client.Do(req)
 	if err != nil {
-		return conResp, err
+		return err
 	}
 	defer resp.Body.Close()
+	// body, err := ioutil.ReadAll(resp.Body)
+	// fmt.Println(err, string(body))
+	var statusCode int = resp.StatusCode
+	// fmt.Println("-------------status code:------------------", statusCode)
+	if statusCode == http.StatusOK || statusCode == http.StatusCreated ||
+		statusCode == http.StatusAccepted || statusCode == http.StatusNoContent {
+		var conResp CoversationResp
+		body, err := ioutil.ReadAll(resp.Body)
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return conResp, err
-	}
-	fmt.Println("string body request: ", string(body))
-	if err := json.Unmarshal(body, &conResp); err != nil {
-		var ErrorResp = ErrorResponse{}
-		err = json.Unmarshal(body, &ErrorResp)
-		if err == nil {
-			return conResp, errors.New(ErrorResp.ErrorDescription)
+		if err != nil {
+			return err
 		}
-		return conResp, err
-	}
-	SSkype.SActivity.Conversation.ID = conResp.ID
+		fmt.Println("string body request: ", string(body))
+		if err := json.Unmarshal(body, &conResp); err != nil {
+			var ErrorResp = ErrorResponse{}
+			err = json.Unmarshal(body, &ErrorResp)
+			if err == nil {
+				return errors.New(ErrorResp.ErrorDescription)
+			}
+			return err
+		}
+		activity := &Activity{
+			Type:         "message",
+			From:         conversation.Members[0],
+			Conversation: ConversationAccount{ID: conResp.ID, IsGroup: conversation.IsGroup, Name: conversation.TopicName},
+			Recipient:    conversation.Bot,
+			Text:         message,
+			ServiceURL:   utils.MESSAGE_TRANSFER_URL}
+		SSkype.SActivity = activity
+		return nil
 
-	return conResp, nil
+	}
+	fmt.Println(statusCode)
+	panic("Stop here, ")
+	return fmt.Errorf(unexpectedHttpStatusCodeTemplate, statusCode)
+}
+
+func (SSkype *SkypeService) BeginConversation(conversation Conversation, message string) error {
+	err := SSkype.requestConversation(conversation, message)
+	if err != nil {
+		return err
+	}
+	SSkype.SendActivity(message)
+	return nil
 }
