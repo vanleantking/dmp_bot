@@ -68,19 +68,6 @@ func startCustomServerEndpoint() {
 	// here we could probably just handle our main application
 	mux.HandleFunc(someOtherStuffPath, handleMainPath)
 	// here you could provide your own TLS configuration
-
-	// // // @VANLE: modified tls custom config by read file certificate
-	// rootCertFile, er := ioutil.ReadFile("./cert.pem")
-	// if er != nil {
-	// 	panic(er.Error())
-	// }
-	// // rootCert, _ := rootCertFile.Read()
-	// roots := x509.NewCertPool()
-	// ok := roots.AppendCertsFromPEM(rootCertFile)
-	// if !ok {
-	// 	panic("failed to parse root certificate")
-	// }
-	// customTlsConfig := &tls.Config{RootCAs: roots}
 	customTlsConfig := &tls.Config{
 		MinVersion:               tls.VersionTLS12,
 		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
