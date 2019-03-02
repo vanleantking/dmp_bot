@@ -2,6 +2,7 @@
  - authentication bot
  - tạo conversation => cần có bot/user id, bot/user name..
  - send/receive message (activity)
+ activity: https://docs.microsoft.com/en-us/azure/bot-service/dotnet/bot-builder-dotnet-activities?view=azure-bot-service-3.0
 
 endpoint:
  - hứng các sự kiện (events)
