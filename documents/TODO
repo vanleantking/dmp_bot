@@ -1,10 +1,7 @@
 => @TODO:
- - build endpoint (in progress)
- - construct activity to get skype message (events) on channel (oke)
- - buidl bot_skype type construct bot api (include endpoint, server endpoint handle event,
- bot_connector to handle conversation) (in progress)
  - handle more event of activity 
     + message
-    + conversationUpdate
     + event => integrated with data server
- - Save contact(user/group) as json file to start conversation on event handler
+ - Save contact(user/group) as json file to start conversation on event handler => current add member on 3 cái cuốc group [done]
+ - construct package handle error event on server (in-progress)
+
