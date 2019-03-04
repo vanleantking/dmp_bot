@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"./skype"
-	"./utils"
 )
 
 var (
@@ -14,9 +13,9 @@ var (
 )
 
 func main() {
-	bot = skype.InitBot(":9443", utils.MIRCOSOFT_APP_ID, utils.MIRCOSOFT_APP_PASSWORD)
+	bot = skype.InitBot(":9443", skype.MIRCOSOFT_APP_ID, skype.MIRCOSOFT_APP_PASSWORD)
 
-	er := bot.ConnectorAPI.Authenticate(utils.AUTHENTICATE_URL)
+	er := bot.ConnectorAPI.Authenticate(skype.AUTHENTICATE_URL)
 	if er != nil {
 		fmt.Println("Error at authenticate")
 		panic(er.Error())
@@ -29,7 +28,7 @@ func main() {
 
 func handleActivity(activity *skype.Activity) {
 	// Currently only support on skype chat, not web chat
-	if activity.ServiceURL != utils.WebchatURL {
+	if activity.ServiceURL != skype.WebchatURL {
 		switch activity.Type {
 		case skype.Message:
 			bot.ConnectorAPI.SActivity = activity
@@ -60,13 +59,15 @@ func handleActivity(activity *skype.Activity) {
 			fmt.Println("Successfully sent response message to skype user: " + activity.From.Name)
 
 		case skype.Event:
+			fmt.Println("Enter activity event type, ", activity)
 			conversation := skype.Conversation{
-				Bot:     skype.ChannelAccount{ID: "28:632cfdd8-e2db-43ef-9653-8205729a10f9", Name: "ureka_dmp_bot"},
+				Bot:     skype.ChannelAccount{ID: activity.From.ID, Name: activity.From.Name},
 				IsGroup: false,
 				Members: []skype.ChannelAccount{
-					skype.ChannelAccount{ID: "19:49f295455f2847598fa4856cf98d693a@thread.skype", Name: "dmp members"}},
+					skype.ChannelAccount{ID: skype.DMP_GROUP_ID, Name: skype.DMP_GROUP_NAME}},
 				TopicName: "Start conversation"}
-			bot.ConnectorAPI.BeginConversation(conversation, "Tin reply")
+			fmt.Println(conversation)
+			bot.ConnectorAPI.BeginConversation(conversation, activity.Text)
 
 		case skype.ConversationUpdate:
 			bot.ConnectorAPI.SActivity = activity

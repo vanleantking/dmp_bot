@@ -6,3 +6,4 @@ utils/context/user.json
 skype/contacts.json
 utils/context/add_group.json
 utils/context/remove_group.json
+skype/constant.go

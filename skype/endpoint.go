@@ -4,8 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"net/http"
-
-	"../utils"
 )
 
 type Endpoint struct {
@@ -31,7 +29,7 @@ func NewEndpoint(address string) *Endpoint {
 	}
 	return &Endpoint{
 		Address:   address,
-		Path:      utils.ACTIONHOOK,
+		Path:      ACTIONHOOK,
 		TLSConfig: cfg,
 	}
 }
@@ -54,7 +52,7 @@ type EndpointHandler struct {
 func (endpoint Endpoint) NewEndpointHandler(activityReceivedHandleFunction func(activity *Activity), authorizationToken, microsoftAppId string) *EndpointHandler {
 	endpointHandler := &EndpointHandler{
 		AuthorizationToken:             authorizationToken,
-		TlsHeaderValue:                 utils.DefaultTlsHeaderValue,
+		TlsHeaderValue:                 DefaultTlsHeaderValue,
 		ActivityReceivedHandleFunction: activityReceivedHandleFunction,
 		MicrosoftAppId:                 microsoftAppId,
 	}
@@ -75,7 +73,7 @@ func (endpointHandler EndpointHandler) IsAuthorized(req *http.Request) bool {
 // The req which should be proved
 // The SigningKeys which can be used to authorize the request
 func (endpointHandler EndpointHandler) IsAuthorizedWithSigningKeys(req *http.Request, signingKeys SigningKeys) bool {
-	var authorizationValue string = req.Header.Get(utils.AuthorizationHeaderKey)
+	var authorizationValue string = req.Header.Get(AuthorizationHeaderKey)
 	if microsoftJsonWebToken, err := ParseMicrosoftJsonWebToken(authorizationValue); err != nil {
 		return false
 	} else {

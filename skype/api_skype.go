@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"../utils"
 )
 
 const (
-// unexpectedHttpStatusCodeTemplate = "The microsoft servers returned an unexpected http status code: %v"
+	unexpectedHttpStatusCodeTemplate = "The microsoft servers returned an unexpected http status code: %v"
 )
 
 type SkypeService struct {
@@ -109,7 +107,6 @@ func (SSkype *SkypeService) Authenticate(url string) error {
 }
 
 func (SSkype *SkypeService) SendActivity(message string) {
-	fmt.Println("go to replay, ", message)
 	responseActivity := &Activity{
 		Type:         "message",
 		From:         SSkype.SActivity.Recipient,
@@ -119,7 +116,7 @@ func (SSkype *SkypeService) SendActivity(message string) {
 		ReplyToID:    SSkype.SActivity.ID,
 	}
 
-	replyUrl := fmt.Sprintf(utils.SEND_MESSAGE,
+	replyUrl := fmt.Sprintf(SEND_MESSAGE,
 		SSkype.SActivity.ServiceURL,
 		SSkype.SActivity.Conversation.ID,
 		SSkype.SActivity.ID)
@@ -128,13 +125,10 @@ func (SSkype *SkypeService) SendActivity(message string) {
 		"content-type": "application/json"}
 
 	SSkype.setHeader(headers)
-	fmt.Println(responseActivity, replyUrl)
 	activitystr, err := json.Marshal(responseActivity)
 	if err != nil {
 		panic(err.Error())
 	}
-	// activitystr := fmt.Sprintf("%#v", responseActivity)
-	fmt.Println("activity, ", activitystr)
 	req, err := http.NewRequest("POST", replyUrl, bytes.NewBuffer(activitystr))
 
 	// Set header request
@@ -159,7 +153,6 @@ func (SSkype *SkypeService) SendActivity(message string) {
 
 func (SSkype *SkypeService) requestConversation(conversation Conversation, message string) error {
 
-	fmt.Println("Den day roi----------------------")
 	var headers = map[string]string{
 		"content-type": "application/json"}
 
@@ -169,10 +162,7 @@ func (SSkype *SkypeService) requestConversation(conversation Conversation, messa
 		return err
 	}
 
-	fmt.Println(string(con))
-
-	req, err := http.NewRequest("POST", utils.MESSAGE_TRANSFER_URL+utils.START_CONVERSATION, bytes.NewBuffer(con))
-	fmt.Println("--------------Loi ne,")
+	req, err := http.NewRequest("POST", MESSAGE_TRANSFER_URL+START_CONVERSATION, bytes.NewBuffer(con))
 	if err != nil {
 		panic(err.Error())
 	}
@@ -189,10 +179,7 @@ func (SSkype *SkypeService) requestConversation(conversation Conversation, messa
 		return err
 	}
 	defer resp.Body.Close()
-	// body, err := ioutil.ReadAll(resp.Body)
-	// fmt.Println(err, string(body))
 	var statusCode int = resp.StatusCode
-	// fmt.Println("-------------status code:------------------", statusCode)
 	if statusCode == http.StatusOK || statusCode == http.StatusCreated ||
 		statusCode == http.StatusAccepted || statusCode == http.StatusNoContent {
 		var conResp CoversationResp
@@ -212,17 +199,15 @@ func (SSkype *SkypeService) requestConversation(conversation Conversation, messa
 		}
 		activity := &Activity{
 			Type:         "message",
-			From:         conversation.Members[0],
+			From:         conversation.Bot,
 			Conversation: ConversationAccount{ID: conResp.ID, IsGroup: conversation.IsGroup, Name: conversation.TopicName},
-			Recipient:    conversation.Bot,
+			Recipient:    conversation.Members[0],
 			Text:         message,
-			ServiceURL:   utils.MESSAGE_TRANSFER_URL}
+			ServiceURL:   MESSAGE_TRANSFER_URL}
 		SSkype.SActivity = activity
 		return nil
 
 	}
-	fmt.Println(statusCode)
-	panic("Stop here, ")
 	return fmt.Errorf(unexpectedHttpStatusCodeTemplate, statusCode)
 }
 
@@ -233,4 +218,32 @@ func (SSkype *SkypeService) BeginConversation(conversation Conversation, message
 	}
 	SSkype.SendActivity(message)
 	return nil
+}
+
+func (SSkype *SkypeService) MakeRequest(activity *Activity) {
+
+	activitystr, err := json.Marshal(activity)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:9443"+ACTIONHOOK, bytes.NewBuffer(activitystr))
+	req.Header.Set("Authorization", SSkype.Authorization)
+	req.Header.Set("Content-Type", "application/json")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	resp, err := SSkype.Client.Do(req)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println("string body request: ", string(body), resp.StatusCode)
 }
